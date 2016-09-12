@@ -105,13 +105,14 @@ module DeviseTokenAuth::Concerns::User
     p "-"*80
     p "==>client_id=#{client_id}"
     p "==>client_id_tokens=#{self.tokens[client_id]}"
+
+    return false unless self.tokens[client_id]
+
     t = self.tokens[client_id]['token']
     lt = self.tokens[client_id]['last_token']
     p "token?#{t && ::BCrypt::Password.new(t) == token}"
     p "last_token?#{lt && ::BCrypt::Password.new(lt) == token}"
     p "-"*80
-
-    return false unless self.tokens[client_id]
 
     return true if token_is_current?(token, client_id)
     return true if token_can_be_reused?(token, client_id)

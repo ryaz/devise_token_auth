@@ -102,6 +102,14 @@ module DeviseTokenAuth::Concerns::User
 
   def valid_token?(token, client_id='default')
     client_id ||= 'default'
+    p "-"*80
+    p "==>client_id=#{client_id}"
+    p "==>client_id_tokens=#{self.tokens[client_id]}"
+    t = self.tokens[client_id]['token']
+    lt = self.tokens[client_id]['last_token']
+    p "token?#{t && ::BCrypt::Password.new(t) == token}"
+    p "last_token?#{lt && ::BCrypt::Password.new(lt) == token}"
+    p "-"*80
 
     return false unless self.tokens[client_id]
 
@@ -144,13 +152,17 @@ module DeviseTokenAuth::Concerns::User
     updated_at = self.tokens[client_id]['updated_at'] || self.tokens[client_id][:updated_at]
     last_token = self.tokens[client_id]['last_token'] || self.tokens[client_id][:last_token]
 
+    token_not_expired = updated_at && Time.parse(updated_at) > Time.now - DeviseTokenAuth.batch_request_buffer_throttle
+    Rails.logger.info "===>>>token_not_expired=#{token_not_expired}"
+    Rails.logger.info self.tokens
 
     return true if (
       # ensure that the last token and its creation time exist
       updated_at and last_token and
 
       # ensure that previous token falls within the batch buffer throttle time of the last request
-      Time.parse(updated_at) > Time.now - DeviseTokenAuth.batch_request_buffer_throttle and
+      # Time.parse(updated_at) > Time.now - DeviseTokenAuth.batch_request_buffer_throttle and
+      token_not_expired and
 
       # ensure that the token is valid
       ::BCrypt::Password.new(last_token) == token
